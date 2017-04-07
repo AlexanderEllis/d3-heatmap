@@ -19,7 +19,7 @@
 let svg = d3.select('svg');
 
 // Define constants
-let margin = {top: 90, right: 40, bottom: 70, left: 70};
+let margin = {top: 70, right: 20, bottom: 70, left: 70};
 let width = +svg.attr('width');
 let height = +svg.attr('height');
 
@@ -33,18 +33,26 @@ d3.json(URL, function(error, data) {
     if (error) throw error;
 
     // Define scales for x and y
-    let x = d3.scaleLinear()
-                .domain([d3.min(data.map(d=> d.year)), d3.max(data.map(d=> d.year))])
-                .range([margin.left, margin.left + width])
-    // Define domains for x and y
-    let y = d3.scaleLinear()
-                .domain([1, 12])
-                .range([height + margin.top, margin.top])
+    let x = d3.scaleBand()
+                .domain(data.monthlyVariance.map(d => d.year))
+                .rangeRound([margin.left, width - margin.right])
+    let y = d3.scaleBand()
+                .domain([12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1])
 
+    y.rangeRound([height - margin.bottom, margin.top])
+
+    console.log(y(2));
     // Add data into the svg with correct coordinates
+    let heatmap = svg.selectAll('g')
+                        .data(data.monthlyVariance)
+                        .enter().append('g')
+                        .attr('transform', d => 'translate(' + x( +d.year) + ',' + y( +d.month) + ')')
 
     // Add rectangle for each
-
+    heatmap.append('rect')
+                .attr('width', x.bandwidth())
+                .attr('height', y.bandwidth())
+                .style('fill', d => 'rgb(' + (+d.variance * 50 + 100) + ', 0, 0)' )
     // Add tooltip
 
     // Create x axis
