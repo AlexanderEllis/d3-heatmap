@@ -22,6 +22,7 @@ let svg = d3.select('svg');
 let margin = {top: 70, right: 20, bottom: 70, left: 70};
 let width = +svg.attr('width');
 let height = +svg.attr('height');
+let months = ['1-indexed', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 // Define url
 let URL = 'https://raw.githubusercontent.com/FreeCodeCamp/ProjectReferenceData/master/global-temperature.json';
@@ -70,8 +71,38 @@ d3.json(URL, function(error, data) {
     heatmap.append('rect')
                 .attr('width', x.bandwidth())
                 .attr('height', y.bandwidth())
-                .style('fill', d => colorMapper(d.variance + baseTemperature)); 
+                .style('fill', d => colorMapper(d.variance + baseTemperature))
+                .on('mouseover', function(d) {
+                    d3.select('.tooltip')
+                        .html(tooltipFormat(d, baseTemperature))
+                        .style('visibility', 'visible')
+                })
+                .on('mousemove', function() {
+                    d3.select('.tooltip')
+                        .style('top', (d3.event.pageY - 120) + 'px')
+                        .style('left', (d3.event.pageX + 10) + 'px')
+                })
+                .on('mouseleave', function() {
+                    d3.select('.tooltip')
+                        .style('visibility', 'hidden')
+                })
+                // Add hovering
+
     // Add tooltip
+    d3.select('body').append('div')
+        .attr('class', 'tooltip')
+        .attr('width', '200px')
+        .attr('height', '200px')
+        .style('position', 'absolute')
+        .style('z-index', '10')
+        .style('background-color', '#333')
+        .style('opacity', '0.8')
+        .style('color', 'white')
+        .style('font-size', '14px')
+        .style('font-family', 'sans-serif')
+        .style('visibility', 'hidden')
+        .style('text-align', 'center')
+        .style('padding', '0 5px 0 5px')
 
     // Create x axis
 
@@ -87,5 +118,11 @@ function colorMapper(variance) {
             return legend[i].color
         }
     }
-    console.log(variance)
+}
+
+function tooltipFormat(d, baseTemperature) {
+
+    return `<h3> ${months[d.month]} ${ d.year }</h3>
+    <p>Average temperature: ${ (d.variance + baseTemperature).toFixed(3) }℃</p>
+    <p>Variance: ${d.variance}℃</p>` 
 }
