@@ -26,11 +26,29 @@ let height = +svg.attr('height');
 // Define url
 let URL = 'https://raw.githubusercontent.com/FreeCodeCamp/ProjectReferenceData/master/global-temperature.json';
 
+// Define color mappings
+let legend = [
+    { varianceMax: 12.7, color:'rgb(158, 1, 66)'}, 
+    { varianceMax: 11.6, color:'rgb(213,62,79)'},
+    { varianceMax: 10.5, color:'rgb(244,109,67)'},
+    { varianceMax: 9.4, color: 'rgb(253,174,97)'}, 
+    { varianceMax: 8.3, color: 'rgb(254,225,139)'}, 
+    { varianceMax: 7.2, color: 'rgb(255,255,191)'},
+    { varianceMax: 6.1, color: 'rgb(230,245,152)'},
+    { varianceMax: 5, color: 'rgb(171,221,164)'},
+    { varianceMax: 3.9, color: 'rgb(102,194,165)'},
+    { varianceMax: 2.7, color: 'rgb(50,136,189)'}, 
+    { varianceMax: 0, color: 'rgb(94,79,162)'}
+]
+
 // Get data with callback
 d3.json(URL, function(error, data) {
 
     // Error check
     if (error) throw error;
+
+    // Access baseTemperature
+    let baseTemperature = data.baseTemperature;
 
     // Define scales for x and y
     let x = d3.scaleBand()
@@ -52,7 +70,7 @@ d3.json(URL, function(error, data) {
     heatmap.append('rect')
                 .attr('width', x.bandwidth())
                 .attr('height', y.bandwidth())
-                .style('fill', d => 'rgb(' + (+d.variance * 50 + 100) + ', 0, 0)' )
+                .style('fill', d => colorMapper(d.variance + baseTemperature)); 
     // Add tooltip
 
     // Create x axis
@@ -62,3 +80,12 @@ d3.json(URL, function(error, data) {
     // Add labels
 
 });
+
+function colorMapper(variance) {
+    for (let i = 0; i < legend.length; i++) {
+        if (variance >= legend[i].varianceMax) {
+            return legend[i].color
+        }
+    }
+    console.log(variance)
+}
