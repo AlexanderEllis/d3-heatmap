@@ -1,25 +1,13 @@
 
 /*
     This is a heatmap of global temperature variation by month over time.
-
-    The Y axis will be month, and the X axis will be time.
-
-    While this doesn't present a continuous time axis by connecting January to December, it does allow
-    the comparison between months for each year, which is more the point.
-
-    Here are the user stories:
-
-    User Story: I can view a heat map with data represented both on the Y and X axis.
-    User Story: Each cell is colored based its relationship to other data.
-
-    I'm going to try to use a linear scale for the X and Y axes, but I may switch to scaleBand later on.
 */
 
 // Select the svg element
 let svg = d3.select('svg');
 
 // Define constants
-let margin = {top: 70, right: 20, bottom: 70, left: 70};
+let margin = {top: 80, right: 20, bottom: 70, left: 80};
 let width = +svg.attr('width');
 let height = +svg.attr('height');
 let months = ['1-indexed', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -54,25 +42,27 @@ d3.json(URL, function(error, data) {
     // Define scales for x and y
     let x = d3.scaleBand()
                 .domain(data.monthlyVariance.map(d => d.year))
-                .rangeRound([margin.left, width - margin.right])
+                .range([margin.left, width - margin.right])
+                .paddingOuter(0.3)
+    
     let y = d3.scaleBand()
                 .domain([12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1])
+                .rangeRound([height - margin.bottom, margin.top]).align(1)
 
-    y.rangeRound([height - margin.bottom, margin.top])
-
-    console.log(y(2));
     // Add data into the svg with correct coordinates
     let heatmap = svg.selectAll('g')
                         .data(data.monthlyVariance)
                         .enter().append('g')
-                        .attr('transform', d => 'translate(' + x( +d.year) + ',' + y( +d.month) + ')')
+                        .attr('transform', d => 'translate(' + x( d.year) + ',' + y( d.month) + ')')
 
-    // Add rectangle for each
+    // Add rectangle for each with hovering functionality
     heatmap.append('rect')
                 .attr('width', x.bandwidth())
                 .attr('height', y.bandwidth())
                 .style('fill', d => colorMapper(d.variance + baseTemperature))
                 .on('mouseover', function(d) {
+                    d3.select(this).style('fill', '#000')
+
                     d3.select('.tooltip')
                         .html(tooltipFormat(d, baseTemperature))
                         .style('visibility', 'visible')
@@ -82,11 +72,12 @@ d3.json(URL, function(error, data) {
                         .style('top', (d3.event.pageY - 120) + 'px')
                         .style('left', (d3.event.pageX + 10) + 'px')
                 })
-                .on('mouseleave', function() {
+                .on('mouseleave', function(d) {
+                    d3.select(this).style('fill', colorMapper(d.variance + baseTemperature))
+
                     d3.select('.tooltip')
                         .style('visibility', 'hidden')
                 })
-                // Add hovering
 
     // Add tooltip
     d3.select('body').append('div')
@@ -103,15 +94,44 @@ d3.json(URL, function(error, data) {
         .style('visibility', 'hidden')
         .style('text-align', 'center')
         .style('padding', '0 5px 0 5px')
+        .style('border-radius', '4px')
 
     // Create x axis
+    svg.append('g')
+        .attr('transform', 'translate(0,' + (height - margin.bottom) + ')')
+        .call(d3.axisBottom(x)
+                    .tickValues(x.domain().filter(d => !(d % 10))))
 
     // Create y axis
+    svg.append('g')
+        .attr('transform', 'translate(' + margin.left + ',0)')
+        .attr('fill', 'white')
+        .call(d3.axisLeft(y)
+                    .tickFormat(m => months[m]))
 
     // Add labels
 
+    svg.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('transform', 'translate(' + (width / 2) + ',' + (height - margin.bottom / 4) + ')')
+        .attr('font-size', '20px')
+        .text('Year')
+
+    svg.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('transform', 'translate(' + (width / 2) + ',' + (margin.top / 1.5) + ')')
+        .attr('font-size', '30px')
+        .text('Monthly Global Land-Surface Temperature 1753 - 2017')
+
+    svg.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('transform', 'translate(' + (width / 2) + ',' + (margin.top / 1.5 + 20) + ')')
+        .attr('font-size', '14px')
+        .text('Temperatures are in Celsius and reported as anomalies relative to the Jan 1951-Dec 1980 average. Estimated Jan 1951-Dec 1980 absolute temperature ℃: 8.66 +/- 0.07')
+
 });
 
+// Function for mapping continuous variance to discrete colors
 function colorMapper(variance) {
     for (let i = 0; i < legend.length; i++) {
         if (variance >= legend[i].varianceMax) {
@@ -120,8 +140,8 @@ function colorMapper(variance) {
     }
 }
 
+// Function to create tooltip html using template literal
 function tooltipFormat(d, baseTemperature) {
-
     return `<h3> ${months[d.month]} ${ d.year }</h3>
     <p>Average temperature: ${ (d.variance + baseTemperature).toFixed(3) }℃</p>
     <p>Variance: ${d.variance}℃</p>` 
